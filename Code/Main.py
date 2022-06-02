@@ -64,26 +64,18 @@ def dT(phi, T):
 
 def Druck(phi, T):
     return m * R * T / Hubvolumen(phi)
-TRK = []
-j = 0
+
 for i in phi:
-    if j == 0:
-        TRK.append(300)
     V.append(Hubvolumen((i)))
-    if j != 0:
-        xyz = dT(i, TRK[j-1])
-        deltaT.append(dT(i, TRK[j-1]))
-        TRK.append(xyz+TRK[j-1])
-    j+=1
 
-#TRK = Num.solve_DGL(Num,dT,phi,T0)
+phiTK, TRK ,dTRK = Num.solve_DGL_RK4(Num,dT,phiES,phiAOE,T0)
 
-for i in range(len(TRK)):
-    p.append((1/100000)*Druck(phi[i],TRK[i])) #in bar
+#for i in range(len(TRK)):
+   # p.append((1/100000)*Druck(phi[i],TRK[i])) #in bar
 
-plt.plot( V, label="V")
-plt.plot(TRK,label="dT")
-#plt.plot(phi,p,label="p")
+plt.plot(phi,V, label="V")
+plt.plot(phiTK,dTRK,label="dT")
+plt.plot(phiTK,TRK,label="T")
 plt.xlabel("°KW")
 plt.legend()
 plt.show()
