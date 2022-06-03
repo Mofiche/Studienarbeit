@@ -4,7 +4,7 @@ import numpy as np
 
 class RungeKutta4(object):
 
-    GENAUIGKEIT = 1000
+    GENAUIGKEIT = 10000
 
     def DGL_Test(self, x, y):
         dy = y
