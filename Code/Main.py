@@ -9,18 +9,18 @@ Model.printErgebnisse()
 
 y = []
 x = []
-min = 20
-max = 200
+min = -50
+max = 50
 schrittweite = 1
-for i in range(min, max, schrittweite):
+for i in range(min, max+1, schrittweite):
     x.append(i)
-    Model.set_epsilon(i/10)
+    Model.set_ZZP(360+i)
     Model.solve()
-    y.append(Model.get_Tmax())
-    print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)))
+    y.append(Model.get_Leistung())
+    print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)),Model.get_Leistung())
+    #plt.plot(Model.V_darstellung,Model.p_darstellung,label=str(i))
 
-plt.plot(x, y, label="epsilon-eta")
-
+plt.plot(x, y, label="")
 # plt.plot(phiKW, V, label="V")
 # plt.plot(phiKW,deltaV,label="dV")
 # plt.plot(phiKW, p_darstellung, label="p")

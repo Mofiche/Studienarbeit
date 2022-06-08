@@ -197,10 +197,10 @@ class Realprozessrechnung(object):
         self.m_vibe = value
 
     def get_phiBA(self):
-        return self.ZZP + self.ZV
+        return self.get_ZZP() + self.get_ZV()
 
     def get_Kurbelradius(self):
-        return self.Hub / 2
+        return self.get_Hub() / 2
 
     def get_phiBD(self):
         return self.phiBD
@@ -274,11 +274,11 @@ class Realprozessrechnung(object):
     def get_pmax(self):
         return max(self.p)
 
-    def get_T(self):
+    def get_T_array(self):
         return self.T
 
     def get_Tmax(self):
-        return max(self.get_T())[0]
+        return max(self.get_T_array())[0]
 
     def get_IndizierterMitteldruck(self):
         return self.get_Kreisprozessarbeit() / (100000 * (self.get_Vmax() - self.get_Vmin()))
@@ -289,6 +289,12 @@ class Realprozessrechnung(object):
 
     def get_Leistung(self):
         return self.get_Drehmoment() * self.get_omega() * 1.36 / 1000
+
+    def get_p_array(self):
+        return self.p
+
+    def get_phi_q_50(self):
+        return 0
 
     def Hubvolumen(self, phi):
         rad = phi * pi / 180
