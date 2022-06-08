@@ -47,19 +47,19 @@ class Realprozessrechnung(object):
         self.isLuftansaugend = False
         self.Zylinderanzahl = 4
 
-        #self.AnzahlStuetzstellen = int((self.phiAOE - self.phiES) / self.Genauigkeit) + 1
-        #self.lambdaPL = self.Kurbelradius / self.Pleuellaenge
-        #self.Hubraum = pi * 0.25 * self.Bohrung * self.Bohrung * self.Hub
-        #self.Kompressionsvolumen = self.Hubraum / (self.epsilon - 1)
-        #self.Vmin = self.Kompressionsvolumen
-        #self.Vmax = self.Kompressionsvolumen + self.Hubraum
-        #self.Luftdichte = self.p0 / (self.R * self.T0)
-        #self.Luftmasse = self.Hubraum * self.Luftdichte
-        #self.Brennstoffmasse = self.Luftmasse / (self.lambdaVerbrennung * self.Lmin)
-        #self.RGA_Masse = (self.RGA / (1 - self.RGA)) * (self.Luftmasse + self.Brennstoffmasse)
-        #self.m = self.Luftmasse + self.Brennstoffmasse + self.RGA_Masse
-        #self.Qmax = self.Brennstoffmasse * self.Hu
-        #self.omega = (self.Drehzahl / 60) * 2 * pi
+        # self.AnzahlStuetzstellen = int((self.phiAOE - self.phiES) / self.Genauigkeit) + 1
+        # self.lambdaPL = self.Kurbelradius / self.Pleuellaenge
+        # self.Hubraum = pi * 0.25 * self.Bohrung * self.Bohrung * self.Hub
+        # self.Kompressionsvolumen = self.Hubraum / (self.epsilon - 1)
+        # self.Vmin = self.Kompressionsvolumen
+        # self.Vmax = self.Kompressionsvolumen + self.Hubraum
+        # self.Luftdichte = self.p0 / (self.R * self.T0)
+        # self.Luftmasse = self.Hubraum * self.Luftdichte
+        # self.Brennstoffmasse = self.Luftmasse / (self.lambdaVerbrennung * self.Lmin)
+        # self.RGA_Masse = (self.RGA / (1 - self.RGA)) * (self.Luftmasse + self.Brennstoffmasse)
+        # self.m = self.Luftmasse + self.Brennstoffmasse + self.RGA_Masse
+        # self.Qmax = self.Brennstoffmasse * self.Hu
+        # self.omega = (self.Drehzahl / 60) * 2 * pi
 
         self.phiKW = arange(self.phiES, self.phiAOE + self.Genauigkeit, self.Genauigkeit)
         self.T = zeros(self.get_AnzahlStuetzstellen())
@@ -75,29 +75,31 @@ class Realprozessrechnung(object):
         self.Brennstoffmasse_phi = zeros(self.get_AnzahlStuetzstellen())
         self.V_darstellung = zeros(self.get_AnzahlStuetzstellen())
         self.p_darstellung = zeros(self.get_AnzahlStuetzstellen())
+        self.QB = zeros(self.get_AnzahlStuetzstellen())
+        self.normierter_Summenbrennverlauf = zeros(self.get_AnzahlStuetzstellen())
 
     def get_Genauigkeit(self):
         return self.Genauigkeit
 
-    def set_Genauigkeit(self,value):
+    def set_Genauigkeit(self, value):
         self.Genauigkeit = value
 
     def get_ASP_pro_Umdrehung(self):
         return self.ASP_pro_Umdrehung
 
-    def set_ASP_pro_Umdrehung(self,value):
+    def set_ASP_pro_Umdrehung(self, value):
         self.ASP_pro_Umdrehung = value
 
     def get_p0(self):
         return self.p0
 
-    def set_p0(self,value):
+    def set_p0(self, value):
         self.p0 = value
 
     def get_T0(self):
         return self.T0
 
-    def set_T0(self,value):
+    def set_T0(self, value):
         self.T0 = value
 
     def get_phiES(self):
@@ -105,95 +107,95 @@ class Realprozessrechnung(object):
 
     def set_phiES(self, value):
         self.phiES = value
-        
+
     def get_phiAOE(self):
         return self.phiAOE
-        
-    def set_phiAOE(self,value):
+
+    def set_phiAOE(self, value):
         self.phiAOE = value
-        
+
     def get_ZZP(self):
         return self.ZZP
-        
-    def set_ZZP(self,value):
+
+    def set_ZZP(self, value):
         self.ZZP = value
-    
+
     def get_ZV(self):
         return self.ZV
-        
-    def set_ZV(self,value):
+
+    def set_ZV(self, value):
         self.ZV = value
 
     def get_Drehzahl(self):
         return self.Drehzahl
 
-    def set_Drehzahl(self,value):
+    def set_Drehzahl(self, value):
         self.Drehzahl = value
 
     def get_cv(self):
         return self.cv
 
-    def set_cv(self,value):
+    def set_cv(self, value):
         self.cv = value
 
     def get_R(self):
         return self.R
 
-    def set_R(self,value):
+    def set_R(self, value):
         self.R = value
 
     def get_Bohrung(self):
         return self.Bohrung
 
-    def set_Bohrung(self,value):
+    def set_Bohrung(self, value):
         self.Bohrung = value
 
     def get_Hub(self):
         return self.Hub
 
-    def set_Hub(self,value):
+    def set_Hub(self, value):
         self.Hub = value
 
     def get_Pleuellaenge(self):
         return self.Pleuellaenge
 
-    def set_Pleuellaenge(self,value):
+    def set_Pleuellaenge(self, value):
         self.Pleuellaenge = value
 
     def get_epsilon(self):
         return self.epsilon
 
-    def set_epsilon(self,value):
+    def set_epsilon(self, value):
         self.epsilon = value
 
     def get_lambdaVerbrennung(self):
         return self.lambdaVerbrennung
 
-    def set_lambdaVerbrennung(self,value):
+    def set_lambdaVerbrennung(self, value):
         self.lambdaVerbrennung = value
 
     def get_Lmin(self):
         return self.Lmin
 
-    def set_Lmin(self,value):
+    def set_Lmin(self, value):
         self.Lmin = value
 
     def get_RGA(self):
         return self.RGA
 
-    def set_RGA(self,value):
+    def set_RGA(self, value):
         self.RGA = value
 
     def get_Hu(self):
         return self.Hu
 
-    def set_Hu(self,value):
+    def set_Hu(self, value):
         self.Hu = value
 
     def get_m_vibe(self):
         return self.m_vibe
 
-    def set_m_vibe(self,value):
+    def set_m_vibe(self, value):
         self.m_vibe = value
 
     def get_phiBA(self):
@@ -205,25 +207,25 @@ class Realprozessrechnung(object):
     def get_phiBD(self):
         return self.phiBD
 
-    def set_phiBD(self,value):
+    def set_phiBD(self, value):
         self.phiBD = value
 
     def get_spezEnthalpieBB(self):
         return self.spezEnthalpieBB
 
-    def set_spezEnthalpieBB(self,value):
+    def set_spezEnthalpieBB(self, value):
         self.spezEnthalpieBB = value
 
     def get_isLuftansaugend(self):
         return self.isLuftansaugend
 
-    def set_isLuftansaugend(self,value):
+    def set_isLuftansaugend(self, value):
         self.isLuftansaugend = value
 
     def get_Zylinderanzahl(self):
         return self.Zylinderanzahl
 
-    def set_Zylinderanzahl(self,value):
+    def set_Zylinderanzahl(self, value):
         self.Zylinderanzahl = value
 
     def get_AnzahlStuetzstellen(self):
@@ -294,7 +296,46 @@ class Realprozessrechnung(object):
         return self.p
 
     def get_phi_q_50(self):
-        return 0
+        ret = 0
+
+        for i in self.phiKW:
+            if self.get_normierter_Summenbrennverlauf(i) >= 0.5:
+                ret = i
+                break
+        return ret-360
+
+    def get_phi_KW(self):
+        return self.phiKW
+
+    def get_V_Array(self):
+        return self.V
+
+    def get_V_Darstellung_Array(self):
+        return self.V_darstellung
+
+    def get_p_Darstellung_Array(self):
+        return self.p_darstellung
+
+    def get_dV_Array(self):
+        return self.deltaV
+
+    def get_dQb_Array(self):
+        return self.deltaQb
+
+    def get_dQw_Array(self):
+        return self.deltaQw
+
+    def get_dW_Array(self):
+        return self.deltaW
+
+    def get_dU_Array(self):
+        return self.deltaU
+
+    def get_QB_Array(self):
+        return self.QB
+
+    def get_lambdaVG_Array(self):
+        return self.lambdaVG
 
     def Hubvolumen(self, phi):
         rad = phi * pi / 180
@@ -311,10 +352,22 @@ class Realprozessrechnung(object):
         if phi < self.get_phiBA():
             ret = 0
         else:
-            ret = (self.get_Qmax() / self.get_phiBD()) * 6.908 * (self.get_m_vibe() + 1) * power((phi - self.get_phiBA()) / self.get_phiBD(),
-                                                                               self.get_m_vibe()) * exp(
+            ret = (self.get_Qmax() / self.get_phiBD()) * 6.908 * (self.get_m_vibe() + 1) * power(
+                (phi - self.get_phiBA()) / self.get_phiBD(),
+                self.get_m_vibe()) * exp(
                 -6.908 * power((phi - self.get_phiBA()) / self.get_phiBD(), self.get_m_vibe() + 1))
         return ret
+
+    def Qb(self, phi):
+        ret = scipy.integrate.quad(self.dQb, self.phiBA, phi)[0]
+        return ret
+
+    def get_normierter_Summenbrennverlauf(self, phi):
+        ret = self.Qb(phi) / self.get_Qmax()
+        return ret
+
+    def get_normierter_Summenbrennverlauf_Array(self):
+        return self.normierter_Summenbrennverlauf
 
     def dQw(self, phi, Temp):
         return 0
@@ -323,11 +376,15 @@ class Realprozessrechnung(object):
         return 0
 
     def dU(self, phi, Temp):
-        return self.dQb(phi) - self.dQw(phi, Temp) - (((self.get_m() * self.get_R() * Temp) / (self.Hubvolumen(phi))) * self.dV(
+        return self.dQb(phi) - self.dQw(phi, Temp) - (
+                ((self.get_m() * self.get_R() * Temp) / (self.Hubvolumen(phi))) * self.dV(
             phi)) - self.get_spezEnthalpieBB() * self.dmBB(phi)
 
     def dT(self, Temp, phi):
         return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
+
+    def dT_Justi(self,Temp,phi):
+        pass
 
     def Druck(self, phi, Temp):
         return self.get_m() * self.get_R() * Temp / self.Hubvolumen(phi)
@@ -339,16 +396,18 @@ class Realprozessrechnung(object):
         T = odeint(self.dT, self.T0, self.phiKW)
         self.T = T
 
+        self.V = [self.Hubvolumen(i) for i in self.phiKW]
+        self.deltaV = [self.dV(i) for i in self.phiKW]
+        self.deltaQb = [self.dQb(i) for i in self.phiKW]
+        self.V_darstellung = [i * 1000000 for i in self.V]
+        self.p_darstellung = [i / 100000 for i in self.p]
+        self.QB = [self.Qb(i) for i in self.phiKW]
+        self.normierter_Summenbrennverlauf = [self.get_normierter_Summenbrennverlauf(i) for i in self.phiKW]
+
         for i in range(self.get_AnzahlStuetzstellen()):
-            self.V[i] = self.Hubvolumen(self.phiKW[i])
-            self.deltaV[i] = self.dV(self.phiKW[i])
-            self.deltaQb[i] = self.dQb(self.phiKW[i])
             self.p[i] = self.Druck(self.phiKW[i], T[i])
             self.deltaU[i] = self.dU(self.phiKW[i], T[i])
             self.deltaQw[i] = self.dQw(self.phiKW[i], T[i])
-
-            self.V_darstellung[i] = self.V[i] * 1000000
-            self.p_darstellung[i] = self.p[i] / 100000
 
         self.Kreisprozessarbeit = self.get_Kreisprozessarbeit()
         self.Wirkunsgrad = self.get_Wirkungsgrad()
@@ -371,4 +430,5 @@ class Realprozessrechnung(object):
         print("P : {:.0f} PS bei ".format(self.get_Leistung()) + str(self.get_Drehzahl()) + " U/min")
         print("pmax: {:.0f} bar".format(self.get_pmax() / 10 ** 5))
         print("Tmax: {:.0f} K".format(self.get_Tmax()))
+        print(f"phi_q_50 liegt bei {self.get_phi_q_50()} °KWnOT")
         print("Berechnungszeit : {:.2f} s".format(self.execTime))
