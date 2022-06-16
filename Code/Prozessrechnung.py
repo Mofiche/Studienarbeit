@@ -1,7 +1,7 @@
 import scipy.misc
 from numpy import cos, sin, exp, power, pi, arange, zeros, sqrt
 from time import time
-from scipy.integrate import odeint, simps
+from scipy.integrate import simps
 
 
 # Alle Einheiten sind insofern nicht anders angegeben SI Einheiten!
@@ -48,6 +48,10 @@ class Realprozessrechnung(object):
         self.__spezEnthalpieBB = spezEnthalpieBB
         self.__isLuftansaugend = isLuftansaugend
         self.__Zylinderanzahl = Zylinderanzahl
+        self.__m_rga_B = self.get_RGA_Masse() / (1 + self.get_lambdaVerbrennung() * self.get_Lmin())
+        self.__m_rga_l = self.get_RGA_Masse() - self.__m_rga_B
+        self.__m_B = self.get_m() / (1 + self.get_lambdaVerbrennung() * self.get_Lmin())
+        self.__m_L = self.get_m() - self.__m_B
 
         self.__phiKW = arange(self.__phiES, self.__phiAOE + self.__Genauigkeit, self.__Genauigkeit)
         self.__T = zeros(self.get_AnzahlStuetzstellen())
@@ -286,7 +290,7 @@ class Realprozessrechnung(object):
         return self.__T
 
     def get_Tmax(self):
-        return max(self.get_T_array())[0]
+        return max(self.get_T_array())
 
     def get_IndizierterMitteldruck(self):
         return self.get_Kreisprozessarbeit() / (100000 * (self.get_Vmax() - self.get_Vmin()))
@@ -386,28 +390,98 @@ class Realprozessrechnung(object):
                 ((self.get_m() * self.get_R() * Temp) / (self.Hubvolumen(phi))) * self.dV(
             phi)) - self.get_spezEnthalpieBB() * self.dmBB(phi)
 
-    def dT(self, Temp, phi):
+    def dT(self, phi,Temp):
         return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
 
-    def dT_Justi(self, Temp, phi):
-        pass
+    def du_Justi(self, Temp, lambdaVG):
+        ret = 0.1445 * (1356.8 + (489.6 + (46.4 / (power(lambdaVG, 0.93)))) * (Temp - 273.15) * power(10, -2)
+                        + (7.768 + (3.36 / (power(lambdaVG, 0.8)))) * power(Temp - 273.15, 2) * power(10, -4) -
+                        (0.0975 + (0.0485 / (power(lambdaVG, 0.75)))) * power(Temp - 273.15, 3) * power(10, -6))
+        return ret
+
+    def dmbv(self, phi):
+        return self.dQb(phi) / self.__Hu
+
+    def mbv(self, phi):
+        return scipy.integrate.quad(self.dmbv, self.__phiBA, phi)[0]
+
+    def lambdaVG_phi(self, phi):
+        ret = (self.__m_rga_l + self.__m_L) / (self.get_Lmin() * (self.__m_rga_B + self.mbv(phi)))
+        return ret
+
+    def dLambdadphi(self, lambdaVG, phi):
+        ret = self.dmbv(phi) * (-lambdaVG) * (1 / (self.__m_rga_B + (self.mbv(phi))))
+        return 0
+
+    def du_dT(self, Temp, lambdaVG):
+        a = 0.1445
+        b = 1356.8
+        c = 489.6
+        d = 46.4
+        e = 0.93
+        f = 7.768
+        g = 3.36
+        h = 0.8
+        i = 0.0975
+        j = 0.0485
+        k = 0.75
+
+        t1 = c / 100
+        t2 = d / (100 * power(lambdaVG, e))
+        t3 = ((2 * Temp - (5463 / 10)) * (f + (g / (power(lambdaVG, h))))) / 10000
+        t4 = (power(Temp - (5463 / 20), 2) * 3 * (i + (k / (power(lambdaVG, k))))) / 1000000
+
+        ret = a * (t1 + t2 + t3 - t4)
+
+        return ret
+
+    def du_dlambda(self, Temp, lambdaVG):
+        a = 0.1445
+        b = 1356.8
+        c = 489.6
+        d = 46.4
+        e = 0.93
+        f = 7.768
+        g = 3.36
+        h = 0.8
+        i = 0.0975
+        j = 0.0485
+        k = 0.75
+
+        t1 = (g * h * power(Temp - (5463 / 20), 2)) / (10000 * power(lambdaVG, h + 1))
+        t2 = (j * k * power(Temp - (5463 / 20), 3)) / (1000000 * power(lambdaVG, k + 1))
+        t3 = (d * e * power(Temp - (5463 / 20), 1)) / (100 * power(lambdaVG, e + 1))
+
+        ret = -a * (t1 - t2 + t3)
+
+        return ret
+
+    def dT_Justi(self, phi,Temp):
+        ret = (1 / (self.get_m() *10000* self.du_dT(Temp,self.__lambdaVerbrennung))) * self.dU(phi, Temp)
+        return ret
 
     def Druck(self, phi, Temp):
         return self.get_m() * self.get_R() * Temp / self.Hubvolumen(phi)
 
-    def solve(self):
+    def solve(self, modus="stat"):
+
+        from scipy.integrate import solve_ivp
 
         StartZeit = time()
 
         self.initArrays()
 
-        T = odeint(self.dT, self.__T0, self.__phiKW)
-        self.__T = T
+        ## FEHLER IN BERECHNUNG JUSTI NOCHMAL RICHTIG TIEFGRÜNDIG DRÜBERSCHAUEN MIT IDEALGAS FUNKTIONIERT ALLES WUNDERBAR
+
+        T = scipy.integrate.solve_ivp(self.dT_Justi,[self.__phiES,self.__phiAOE],[self.__T0],t_eval=self.__phiKW,method="Radau").y[0]
+        print(T)
+
+        self.__T = [i for i in T]
 
         for i in range(self.get_AnzahlStuetzstellen()):
-            self.__p[i] = self.Druck(self.__phiKW[i], T[i])
-            self.__deltaU[i] = self.dU(self.__phiKW[i], T[i])
-            self.__deltaQw[i] = self.dQw(self.__phiKW[i], T[i])
+            self.__p[i] = self.Druck(self.__phiKW[i], self.__T[i])
+            self.__deltaU[i] = self.dU(self.__phiKW[i], self.__T[i])
+            self.__deltaQw[i] = self.dQw(self.__phiKW[i], self.__T[i])
 
         self.__V = [self.Hubvolumen(i) for i in self.__phiKW]
         self.__deltaV = [self.dV(i) for i in self.__phiKW]
@@ -416,6 +490,7 @@ class Realprozessrechnung(object):
         self.__QB = [self.Qb(i) for i in self.__phiKW]
         self.__normierter_Summenbrennverlauf = [self.get_normierter_Summenbrennverlauf(i) for i in self.__phiKW]
         self.__p_darstellung = [i / 100000 for i in self.__p]
+        self.__lambdaVG = [self.lambdaVG_phi(i) for i in self.__phiKW]
 
         self.__Kreisprozessarbeit = self.get_Kreisprozessarbeit()
         self.__Wirkunsgrad = self.get_Wirkungsgrad()
@@ -424,31 +499,41 @@ class Realprozessrechnung(object):
         self.__Drehmoment = self.get_Drehmoment()
         self.__Leistung = self.get_Leistung()
 
+        if modus == "stat":
+            self.writeTXT()
+            self.writeCSV()
+            self.writeXLSX()
+
         EndZeit = time()
 
         self.__execTime = EndZeit - StartZeit
 
-        return T, EndZeit - StartZeit
+        return self.__T, EndZeit - StartZeit
 
-    def writeTXT(self, dateiname="Ergebnisse_TXT"):
+    def writeTXT(self, dateiname="Ergebnisse"):
         file = open(dateiname + ".txt", "w")
         file.write("Winkel Volumen Druck Temperatur \n")
         for i in range(len(self.get_phi_KW())):
-            string = f"{self.__phiKW[i]} {self.__V_darstellung[i]} {self.__p_darstellung[i]} {self.__T[i][0]}\n"
+            string = f"{self.__phiKW[i]} {self.__V_darstellung[i]} {self.__p_darstellung[i]} {self.__T[i]}\n"
             file.write(string)
         file.close()
 
-    def writeCSV(self, dateiname="Ergebnisse_CSV"):
+    def writeCSV(self, dateiname="Ergebnisse"):
         import csv
         file = open(dateiname + ".csv", "w")
         writer = csv.writer(file)
-        writer.writerow("Winkel Volumen Druck Temperatur \n")
-        writer.writerows([self.__phiKW, self.__V_darstellung, self.__p_darstellung, self.__T])
+        writer.writerow(["Winkel", "Volumen", "Druck", "Temperatur"])
+        for i in range(self.get_AnzahlStuetzstellen() - 1):
+            arr = [self.get_phi_KW()[i], self.get_V_Darstellung_Array()[i], self.get_p_Darstellung_Array()[i],
+                   self.get_T_array()[i]]
+            writer.writerow(arr)
+
         file.close()
 
     def writeXLSX(self, dateiname="Ergebnisse"):
         try:
             import xlsxwriter
+
             workbook = xlsxwriter.Workbook(dateiname + ".xlsx")
             worksheet = workbook.add_worksheet()
             worksheet.write("A1", "Winkel")
@@ -460,13 +545,57 @@ class Realprozessrechnung(object):
                 worksheet.write("B" + str(j + 2), self.__V_darstellung[j])
                 worksheet.write("C" + str(j + 2), self.__p_darstellung[j])
                 worksheet.write("D" + str(j + 2), self.__T[j])
-            chart = workbook.add_chart({'type': 'line'})
-            chart.add_series({'categories':f'=Sheet1!A2:A{len(self.__phiKW)+2}','values': f'=Sheet1!C2:C{len(self.__phiKW)+2}','smooth':'True','name':'Druck'})
-            chart.set_x_axis({'name':'Kurbelwinkel in °'})
-            chart.set_y_axis({'name':'Druck in bar'})
-            chart.set_title({'name':'Druck-Kurbelwinkel Diagramm'})
+
+            chart = workbook.add_chart({'type': 'scatter', 'subtype': 'smooth'})
+            chart.add_series(
+                {'categories': f'=Sheet1!A2:A{len(self.__phiKW) + 2}', 'values': f'=Sheet1!C2:C{len(self.__phiKW) + 2}',
+                 'smooth': 'True', 'name': 'Druck'})
+            chart.set_x_axis({'name': 'Kurbelwinkel in °', 'min': f'{self.__phiES}', 'max': f'{self.__phiAOE}'})
+            chart.set_y_axis({'name': 'Druck in bar'})
+            chart.set_title({'name': 'Druck-Kurbelwinkel Diagramm'})
+            chart.width = 700
+            chart.height = 400
+            chart.set_legend({'position': 'bottom'})
+
+            chart2 = workbook.add_chart({'type': 'scatter', 'subtype': 'smooth'})
+            chart2.add_series(
+                {'categories': f'=Sheet1!A2:A{len(self.__phiKW) + 2}', 'values': f'=Sheet1!D2:D{len(self.__phiKW) + 2}',
+                 'smooth': 'True', 'name': 'Temperatur'})
+            chart2.set_x_axis({'name': 'Kurbelwinkel in °', 'min': f'{self.__phiES}', 'max': f'{self.__phiAOE}'})
+            chart2.set_y_axis({'name': 'Temperatur in K'})
+            chart2.set_title({'name': 'Temperatur-Kurbelwinkel Diagramm'})
+            chart2.width = 700
+            chart2.height = 400
+            chart2.set_legend({'position': 'bottom'})
+
+            chart3 = workbook.add_chart({'type': 'scatter', 'subtype': 'smooth'})
+            chart3.add_series(
+                {'categories': f'=Sheet1!B2:B{len(self.__phiKW) + 2}', 'values': f'=Sheet1!C2:C{len(self.__phiKW) + 2}',
+                 'smooth': 'True', 'name': 'Druck'})
+            chart3.set_x_axis({'name': 'Hubvolumen in cm³', 'min': '0', 'max': f'{self.get_Vmax() * 1000000}'})
+            chart3.set_y_axis({'name': 'Druck in bar'})
+            chart3.set_title({'name': 'p-V-Diagramm'})
+            chart3.width = 700
+            chart3.height = 400
+            chart3.set_legend({'position': 'bottom'})
+
+            chart4 = workbook.add_chart({'type': 'scatter', 'subtype': 'smooth'})
+            chart4.add_series(
+                {'categories': f'=Sheet1!B2:B{len(self.__phiKW) + 2}', 'values': f'=Sheet1!D2:D{len(self.__phiKW) + 2}',
+                 'smooth': 'True', 'name': 'Temperatur'})
+            chart4.set_x_axis({'name': 'Hubvolumen in cm³', 'min': '0', 'max': f'{self.get_Vmax() * 1000000}'})
+            chart4.set_y_axis({'name': 'Temperatur in bar'})
+            chart4.set_title({'name': 'T-V-Diagramm'})
+            chart4.width = 700
+            chart4.height = 400
+            chart4.set_legend({'position': 'bottom'})
+
             worksheet.insert_chart('G3', chart)
+            worksheet.insert_chart('G25', chart2)
+            worksheet.insert_chart('S3', chart3)
+            worksheet.insert_chart('S25', chart4)
             workbook.close()
+
         except:
 
             from tkinter import messagebox

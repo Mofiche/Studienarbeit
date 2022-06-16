@@ -5,11 +5,9 @@ def main(args=None):
     Model = Realprozessrechnung(Kurbelwinkelaufloesung=1)
     # Seiliger = Kreisprozessrechnung()
 
-    T, execTime = Model.solve()
+    T, execTime = Model.solve(modus="stat")
 
     Model.printErgebnisse()
-    Model.writeTXT("Ergebnisse_TXT")
-    Model.writeXLSX()
 
     """
     y = []
@@ -33,6 +31,7 @@ def main(args=None):
     # plt.plot(__phiKW, __p_darstellung, label="p")
     # plt.plot(Prozessrechnung.__phiKW, __T, label="T")
     plt.plot(Model.get_V_Darstellung_Array(), Model.get_p_Darstellung_Array(), label="p-V")
+    #plt.plot(Model.get_phi_KW(),Model.get_lambdaVG_Array())
     # plt.plot(__phiKW, __deltaQb, label="dQb")
     # plt.plot(__phiKW, __deltaU, label="dU")
     # plt.plot(__phiKW,__deltaQw,label="dQw")
