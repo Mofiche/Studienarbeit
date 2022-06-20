@@ -5,13 +5,19 @@ from scipy.integrate import simps
 
 
 # Alle Einheiten sind insofern nicht anders angegeben SI Einheiten!
+from Code import Kraftstoffe
+
 
 class Realprozessrechnung(object):
 
     def __init__(self, Kurbelwinkelaufloesung=1, Zylinderanzahl=4, isLuftansaugend=False, spezEnthalpieBB=0, phiBD=50,
                  m_vibe=1, Hu=41000000, RGA=0.04, Lmin=14.7, lambdaVerbrennung=1, epsilon=10.3, Pleuellaenge=0.144,
                  Hub=0.0864, Bohrung=0.081, R=287, cv=718, Drehzahl=5800, ASP=0.5, T0=300,
-                 p0=100000, phiES=220, phiAOE=480, ZZP=352):
+                 p0=100000, phiES=220, phiAOE=480, ZZP=352,Kraftstoff = "Benzin E5"):
+
+        self.__Kraftstoff = Kraftstoffe.get_Kraftstoff(Kraftstoff)
+        print(self.__Kraftstoff)
+
 
         self.__Tmax = 0
         self.__execTime = 0
@@ -39,9 +45,11 @@ class Realprozessrechnung(object):
         self.__Pleuellaenge = Pleuellaenge
         self.__epsilon = epsilon
         self.__lambdaVerbrennung = lambdaVerbrennung
-        self.__Lmin = Lmin
+        self.__Lmin = self.__Kraftstoff["Mindestluftbedarf"]
+        self.__R_Kraftstoff = self.__Kraftstoff["Gaskonstante"]*1000
+        self.__Dichte_Kraftstoff = self.__Kraftstoff["Dichte"]
         self.__RGA = RGA
-        self.__Hu = Hu
+        self.__Hu = self.__Kraftstoff["Hu"]
         self.__m_vibe = m_vibe
         self.__phiBA = self.__ZZP + self.__ZV
         self.__phiBD = phiBD
@@ -473,7 +481,7 @@ class Realprozessrechnung(object):
 
         ## FEHLER IN BERECHNUNG JUSTI NOCHMAL RICHTIG TIEFGRÜNDIG DRÜBERSCHAUEN MIT IDEALGAS FUNKTIONIERT ALLES WUNDERBAR
 
-        T = scipy.integrate.solve_ivp(self.dT_Justi,[self.__phiES,self.__phiAOE],[self.__T0],t_eval=self.__phiKW,method="Radau").y[0]
+        T = scipy.integrate.solve_ivp(self.dT,[self.__phiES,self.__phiAOE],[self.__T0],t_eval=self.__phiKW,method="Radau",rtol=1e-6).y[0]
         print(T)
 
         self.__T = [i for i in T]
@@ -596,7 +604,7 @@ class Realprozessrechnung(object):
             worksheet.insert_chart('S25', chart4)
             workbook.close()
 
-        except:
+        except xlsxwriter.exceptions.FileCreateError:
 
             from tkinter import messagebox
 

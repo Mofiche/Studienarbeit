@@ -2,7 +2,7 @@ def main(args=None):
     from matplotlib import pyplot as plt
     from Code.Prozessrechnung import Realprozessrechnung  # , Kreisprozessrechnung
 
-    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1)
+    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="E100")
     # Seiliger = Kreisprozessrechnung()
 
     T, execTime = Model.solve(modus="stat")
