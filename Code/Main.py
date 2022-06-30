@@ -1,9 +1,8 @@
 def main(args=None):
     from matplotlib import pyplot as plt
-    from Code.Prozessrechnung import Realprozessrechnung  # , Kreisprozessrechnung
+    from Code.Simulationsmodule.Prozessrechnung.Prozessrechnung import Realprozessrechnung  # , Kreisprozessrechnung
 
-    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="E100")
-    # Seiliger = Kreisprozessrechnung()
+    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="Benzin E5")
 
     T, execTime = Model.solve(modus="stat")
 
@@ -12,26 +11,25 @@ def main(args=None):
     """
     y = []
     x = []
-    min = 1
-    max = 5
-    schrittweite = 1
+    min = 800
+    max = 5800
+    schrittweite = 1000
     for i in range(min, max + 1, schrittweite):
-        #x.append(i)
-        Model.set_m_vibe(i)
+        x.append(i)
+        Model.set_Drehzahl(i)
         _, zeit = Model.solve()
-        x.append(180+i)
-        y.append(Model.get_Leistung())
-        print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)), Model.get_Leistung())
-        plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(i))
-    #plt.plot(x, y, label="")
+        y.append(Model.get_Drehmoment())
+        print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)))
+        #plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(i))
+    plt.plot(x, y, label="")
     """
 
-    # plt.plot(__phiKW, __V, label="V")
+    # plt.plot(Model.get_phi_KW(), Model.get_V_Darstellung_Array(), label="V")
     # plt.plot(__phiKW,__deltaV,label="dV")
     # plt.plot(__phiKW, __p_darstellung, label="p")
     # plt.plot(Prozessrechnung.__phiKW, __T, label="T")
     plt.plot(Model.get_V_Darstellung_Array(), Model.get_p_Darstellung_Array(), label="p-V")
-    #plt.plot(Model.get_phi_KW(),Model.get_lambdaVG_Array())
+    # plt.plot(Model.get_phi_KW(),Model.get_lambdaVG_Array())
     # plt.plot(__phiKW, __deltaQb, label="dQb")
     # plt.plot(__phiKW, __deltaU, label="dU")
     # plt.plot(__phiKW,__deltaQw,label="dQw")
@@ -39,7 +37,7 @@ def main(args=None):
 
     # plt.xlabel("°KW")
     plt.legend()
-    plt.savefig("pyplot.png", dpi=1000)
+    plt.savefig("Output\pyplot.png", dpi=1000)
     plt.show()
 
 
