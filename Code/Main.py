@@ -2,27 +2,27 @@ def main(args=None):
     from matplotlib import pyplot as plt
     from Code.Simulationsmodule.Prozessrechnung.Prozessrechnung import Realprozessrechnung  # , Kreisprozessrechnung
 
-    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="Benzin E5")
+    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="Benzin E5",isLuftansaugend=True)
 
     T, execTime = Model.solve(modus="stat")
 
     Model.printErgebnisse()
 
-    """
-    y = []
+
+    """y = []
     x = []
-    min = 800
-    max = 5800
-    schrittweite = 1000
+    min = 10
+    max = 50
+    schrittweite = 10
     for i in range(min, max + 1, schrittweite):
-        x.append(i)
-        Model.set_Drehzahl(i)
+        x.append(i/10)
+        Model.set_lambdaVerbrennung(i/10)
         _, zeit = Model.solve()
         y.append(Model.get_Drehmoment())
         print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)))
-        #plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(i))
-    plt.plot(x, y, label="")
-    """
+        plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(i))
+    #plt.plot(x, y, label="")"""
+
 
     # plt.plot(Model.get_phi_KW(), Model.get_V_Darstellung_Array(), label="V")
     # plt.plot(__phiKW,__deltaV,label="dV")

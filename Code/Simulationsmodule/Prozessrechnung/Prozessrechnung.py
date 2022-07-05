@@ -5,7 +5,7 @@ from time import time
 from scipy.integrate import simps
 
 # Alle Einheiten sind insofern nicht anders angegeben SI Einheiten!
-from Code.Simulationsmodule.Kalorik import Kraftstoffe
+from Code.Simulationsmodule.Kalorik import Kraftstoffe, Kalorik
 from Code.Simulationsmodule.Mechanik.Motormechanik import Motormechanik
 
 
@@ -21,7 +21,6 @@ class Realprozessrechnung(object):
                  p0=100000, phiES=220, phiAOE=480, ZZP=352, Kraftstoff="Benzin E5"):
 
         self.__Kraftstoff = Kraftstoffe.get_Kraftstoff(Kraftstoff)
-        print(self.__Kraftstoff)
 
         self.__Tmax = 0
         self.__execTime = 0
@@ -91,6 +90,8 @@ class Realprozessrechnung(object):
                                         Kompressionsvolumen=self.get_Kompressionsvolumen(),
                                         Hubraum=self.get_Hubraum(), Pleuellaenge=self.get_Pleuellaenge())
 
+        self.__Kalorik = Kalorik.ThermodynamischeDaten()
+
     def initArrays(self):
         self.__phiKW = arange(self.__phiES, self.__phiAOE + self.__Genauigkeit, self.__Genauigkeit)
         self.__T = zeros(self.get_AnzahlStuetzstellen())
@@ -122,7 +123,7 @@ class Realprozessrechnung(object):
         TES = TUT * power(Mechanik.Hubvolumen(180) / Mechanik.Hubvolumen(self.__phiES),
                           self.__polytropenExponent_Verdichtung - 1)
 
-        return TES
+        return 300
 
     def get_Reibmitteldruck(self):
         return self.__Reibmitteldruck
@@ -296,16 +297,77 @@ class Realprozessrechnung(object):
         return self.get_p0() / (self.get_R() * self.get_T0())
 
     def get_Luftmasse(self):
-        return self.get_Hubraum() * self.get_Luftdichte()
+        if self.__isLuftansaugend:
+
+            Luftmasse = self.get_Hubraum() * self.get_Luftdichte()
+            return Luftmasse
+
+        else:
+
+            Luftmasse = (self.get_Hubraum() * self.get_Luftdichte()) / (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
+                    (self.get_RGA() / (1 - self.get_RGA())) * (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
+            return Luftmasse
 
     def get_Brennstoffmasse(self):
-        return self.get_Luftmasse() / (self.get_lambdaVerbrennung() * self.get_Lmin())
+        if self.__isLuftansaugend:
+
+            Luftmasse = self.get_Hubraum() * self.get_Luftdichte()
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+
+            return Brennstoffmasse
+
+        else:
+
+            Luftmasse = (self.get_Hubraum() * self.get_Luftdichte()) / (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
+                    (self.get_RGA() / (1 - self.get_RGA())) * (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+
+            return Brennstoffmasse
 
     def get_RGA_Masse(self):
-        return (self.get_RGA() / (1 - self.get_RGA())) * (self.get_Luftmasse() + self.get_Brennstoffmasse())
+        if self.__isLuftansaugend:
+
+            Luftmasse = self.get_Hubraum() * self.get_Luftdichte()
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+            RGA_Masse = (self.get_RGA() / (1 - self.get_RGA())) * (Luftmasse + Brennstoffmasse)
+
+            return RGA_Masse
+
+        else:
+
+            Luftmasse = (self.get_Hubraum() * self.get_Luftdichte()) / (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
+                    (self.get_RGA() / (1 - self.get_RGA())) * (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+            RGA_Masse = (self.get_RGA() / (1 - self.get_RGA())) * (Luftmasse + Brennstoffmasse)
+
+            return RGA_Masse
 
     def get_m(self):
-        return self.get_Luftmasse() + self.get_Brennstoffmasse() + self.get_RGA_Masse()
+
+        if self.__isLuftansaugend:
+
+            Luftmasse = self.get_Hubraum() * self.get_Luftdichte()
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+            RGA_Masse = (self.get_RGA() / (1 - self.get_RGA())) * (Luftmasse + Brennstoffmasse)
+
+            return Luftmasse + Brennstoffmasse + RGA_Masse
+
+        else:
+
+            Luftmasse = (self.get_Hubraum() * self.get_Luftdichte()) / (
+                        1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
+                            (self.get_RGA() / (1 - self.get_RGA())) * (
+                                1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
+            Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
+            RGA_Masse = (self.get_RGA() / (1 - self.get_RGA())) * (Luftmasse + Brennstoffmasse)
+
+            return Luftmasse + Brennstoffmasse + RGA_Masse
 
     def get_Qmax(self):
         return self.get_Brennstoffmasse() * self.get_Hu()
@@ -427,23 +489,10 @@ class Realprozessrechnung(object):
             phi)) - self.get_spezEnthalpieBB() * self.dmBB(phi)
 
     def dT(self, phi, Temp):
-        return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
 
-    def du_Justi(self, Temp, lambdaVG):
-        ret = 0.1445 * (1356.8 + (489.6 + (46.4 / (power(lambdaVG, 0.93)))) * (Temp - 273.15) * power(10, -2)
-                        + (7.768 + (3.36 / (power(lambdaVG, 0.8)))) * power(Temp - 273.15, 2) * power(10, -4) -
-                        (0.0975 + (0.0485 / (power(lambdaVG, 0.75)))) * power(Temp - 273.15, 3) * power(10, -6))
-        return ret
-
-    def dmbv(self, phi):
-        return self.dQb(phi) / self.__Hu
-
-    def mbv(self, phi):
-        return scipy.integrate.quad(self.dmbv, self.__phiBA, phi)[0]
-
-    def lambdaVG_phi(self, phi):
-        ret = (self.__m_rga_l + self.__m_L) / (self.get_Lmin() * (self.__m_rga_B + self.mbv(phi)))
-        return ret
+        # return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
+        return 1 / (self.get_m() * self.__Kalorik.get_du_dt(self.__Kraftstoff["Name"], Temp, self.__lambdaVerbrennung)[
+            0]) * self.dU(phi, Temp)
 
     def Druck(self, phi, Temp):
         return self.get_m() * self.get_R() * Temp / self.__Mechanik.Hubvolumen(phi)
@@ -462,6 +511,7 @@ class Realprozessrechnung(object):
 
         T = scipy.integrate.solve_ivp(self.dT, [self.__phiES, self.__phiAOE], [self.get_T0()], t_eval=self.__phiKW,
                                       method="Radau", rtol=1e-6)
+
         success = T.success
         if success:
             pass
