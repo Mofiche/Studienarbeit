@@ -1,7 +1,8 @@
+from time import time
+
 import numpy as np
 import scipy.misc
-from numpy import cos, sin, exp, power, pi, arange, zeros, sqrt
-from time import time
+from numpy import exp, power, pi, arange, zeros
 from scipy.integrate import simps
 
 # Alle Einheiten sind insofern nicht anders angegeben SI Einheiten!
@@ -361,9 +362,9 @@ class Realprozessrechnung(object):
         else:
 
             Luftmasse = (self.get_Hubraum() * self.get_Luftdichte()) / (
-                        1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
-                            (self.get_RGA() / (1 - self.get_RGA())) * (
-                                1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())) + (
+                    (self.get_RGA() / (1 - self.get_RGA())) * (
+                    1 + (1 / (self.get_lambdaVerbrennung() * self.get_Lmin())))))
             Brennstoffmasse = Luftmasse / (self.get_lambdaVerbrennung() * self.get_Lmin())
             RGA_Masse = (self.get_RGA() / (1 - self.get_RGA())) * (Luftmasse + Brennstoffmasse)
 
@@ -491,8 +492,8 @@ class Realprozessrechnung(object):
     def dT(self, phi, Temp):
 
         # return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
-        return 1 / (self.get_m() * self.__Kalorik.get_du_dt(self.__Kraftstoff["Name"], Temp, self.__lambdaVerbrennung)[
-            0]) * self.dU(phi, Temp)
+        return 1 / (self.get_m() * self.__Kalorik.get_du_dt(self.__Kraftstoff["Name"], Temp, self.__lambdaVerbrennung,
+                                                            self.Druck(phi, Temp),self.get_normierter_Summenbrennverlauf(phi))) * self.dU(phi, Temp)
 
     def Druck(self, phi, Temp):
         return self.get_m() * self.get_R() * Temp / self.__Mechanik.Hubvolumen(phi)
@@ -510,7 +511,7 @@ class Realprozessrechnung(object):
         self.initArrays()
 
         T = scipy.integrate.solve_ivp(self.dT, [self.__phiES, self.__phiAOE], [self.get_T0()], t_eval=self.__phiKW,
-                                      method="Radau", rtol=1e-6)
+                                      method="RK45", rtol=1e-6)
 
         success = T.success
         if success:

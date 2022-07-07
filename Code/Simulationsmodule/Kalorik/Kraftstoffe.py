@@ -26,8 +26,8 @@ E85 = {
     "Molare Masse": 53.61
 }
 
-E100 = {
-    "Name": "E100",
+Ethanol = {
+    "Name": "Ethanol",
     "Hu": 26800000,
     "Dichte": 789,
     "Mindestluftbedarf": 9.07,
@@ -102,7 +102,7 @@ Kraftstoffe = {
     "Benzin E5": Benzin_E5,
     "Benzin E10": Benzin_E10,
     "E85": E85,
-    "E100":E100,
+    "Ethanol":Ethanol,
     "Diesel":Diesel,
     "Biodiesel":Biodiesel,
     "Schweroel":Schweroel,
