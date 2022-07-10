@@ -19,7 +19,7 @@ class Realprozessrechnung(object):
     def __init__(self, Kurbelwinkelaufloesung=1, Zylinderanzahl=4, isLuftansaugend=False, spezEnthalpieBB=0, phiBD=50,
                  m_vibe=1, Hu=41000000, RGA=0.04, Lmin=14.7, lambdaVerbrennung=1, epsilon=10.3, Pleuellaenge=0.144,
                  Hub=0.0864, Bohrung=0.081, R=287, cv=718, Drehzahl=5800, ASP=0.5, T0=300,
-                 p0=100000, phiES=220, phiAOE=480, ZZP=352, Kraftstoff="Benzin E5"):
+                 p0=100000, phiES=220, phiAOE=480, ZZP=350, Kraftstoff="Benzin"):
 
         self.__Kraftstoff = Kraftstoffe.get_Kraftstoff(Kraftstoff)
 
@@ -85,6 +85,10 @@ class Realprozessrechnung(object):
         self.__p_darstellung = zeros(self.get_AnzahlStuetzstellen())
         self.__QB = zeros(self.get_AnzahlStuetzstellen())
         self.__normierter_Summenbrennverlauf = zeros(self.get_AnzahlStuetzstellen())
+        self.__cp = zeros(self.get_AnzahlStuetzstellen())
+        self.__kappa = zeros(self.get_AnzahlStuetzstellen())
+        self.__alpha = zeros(self.get_AnzahlStuetzstellen())
+        self.__thermodata = zeros(self.get_AnzahlStuetzstellen())
 
         self.__Mechanik = Motormechanik(Kurbelradius=self.get_Kurbelradius(), Drehzahl=self.get_Drehzahl(),
                                         LambdaPL=self.get_lambdaPL(),
@@ -110,6 +114,11 @@ class Realprozessrechnung(object):
         self.__p_darstellung = zeros(self.get_AnzahlStuetzstellen())
         self.__QB = zeros(self.get_AnzahlStuetzstellen())
         self.__normierter_Summenbrennverlauf = zeros(self.get_AnzahlStuetzstellen())
+        self.__cv = zeros(self.get_AnzahlStuetzstellen())
+        self.__cp = zeros(self.get_AnzahlStuetzstellen())
+        self.__kappa = zeros(self.get_AnzahlStuetzstellen())
+        self.__alpha = zeros(self.get_AnzahlStuetzstellen())
+        self.__thermodata = zeros(self.get_AnzahlStuetzstellen())
 
     def get_T0(self):
 
@@ -124,7 +133,7 @@ class Realprozessrechnung(object):
         TES = TUT * power(Mechanik.Hubvolumen(180) / Mechanik.Hubvolumen(self.__phiES),
                           self.__polytropenExponent_Verdichtung - 1)
 
-        return 300
+        return self.__T0
 
     def get_Reibmitteldruck(self):
         return self.__Reibmitteldruck
@@ -443,8 +452,17 @@ class Realprozessrechnung(object):
     def get_QB_Array(self):
         return self.__QB
 
-    def get_lambdaVG_Array(self):
-        return self.__lambdaVG
+    def get_cv_Array(self):
+        return self.__cv
+
+    def get_cp_Array(self):
+        return self.__cp
+
+    def get_kappa_Array(self):
+        return self.__kappa
+
+    def get_alpha_array(self):
+        return self.__alpha
 
     def dQb(self, phi):
         if phi < self.get_phiBA():
@@ -472,10 +490,8 @@ class Realprozessrechnung(object):
             Temp = Temp[0]
         except:
             pass
-        alpha = 1.166 * np.cbrt(self.Druck(phi, Temp) ** 2 * Temp) * (
+        alpha = 1.166 * np.cbrt(self.Druck(phi, Temp) ** 2 * Temp / 1e5) * (
                 1 + 1.24 * np.abs(self.__Mechanik.Kolbengeschwindigkeit(phi)))
-        print(alpha)
-
         return alpha
 
     def dQw(self, phi, Temp):
@@ -490,17 +506,16 @@ class Realprozessrechnung(object):
             phi)) - self.get_spezEnthalpieBB() * self.dmBB(phi)
 
     def dT(self, phi, Temp):
-
-        # return (1 / (self.get_m() * self.get_cv())) * self.dU(phi, Temp)
-        return 1 / (self.get_m() * self.__Kalorik.get_du_dt(self.__Kraftstoff["Name"], Temp, self.__lambdaVerbrennung,
-                                                            self.Druck(phi, Temp),self.get_normierter_Summenbrennverlauf(phi))) * self.dU(phi, Temp)
+        return 1 / (self.get_m() *
+                    self.__Kalorik.get_thermo_data(self.__Kraftstoff["Name"], Temp, self.__lambdaVerbrennung,
+                                                   self.Druck(phi, Temp))["cv"]) * self.dU(phi, Temp)
 
     def Druck(self, phi, Temp):
         return self.get_m() * self.get_R() * Temp / self.__Mechanik.Hubvolumen(phi)
 
     def calc_Reibmitteldruck(self, pmi, n):
         pmr = (1.83044 * 1e-5 * (n / 60) + 0.033) * pmi + (1.87 * 1e-4 * (n / 60)) + 0.289
-        return pmr
+        return pmr - pmr
 
     def solve(self, modus="stat"):
 
@@ -521,12 +536,13 @@ class Realprozessrechnung(object):
 
         T = T.y[0]
 
-        self.__T = [i for i in T]
+        self.__T = T
 
         for i in range(self.get_AnzahlStuetzstellen()):
             self.__p[i] = self.Druck(self.__phiKW[i], self.__T[i])
             self.__deltaU[i] = self.dU(self.__phiKW[i], self.__T[i])
             self.__deltaQw[i] = self.dQw(self.__phiKW[i], self.__T[i])
+            self.__alpha[i] = self.alpha_Nusselt(self.__phiKW[i], self.__T[i])
 
         self.__V = [self.__Mechanik.Hubvolumen(i) for i in self.__phiKW]
         self.__deltaV = [self.__Mechanik.dV(i) for i in self.__phiKW]
@@ -650,6 +666,8 @@ class Realprozessrechnung(object):
             self.writeXLSX(dateiname)
 
     def printErgebnisse(self):
+        print("\n\n\n")
+        print(f"Kraftstoff {self.__Kraftstoff['Name']}")
         print("Wk : {:.0f} J".format(self.get_Kreisprozessarbeit()))
         print("pmi : {:.2f} bar".format(self.get_IndizierterMitteldruck()))
         print("pmr : {:.2f} bar".format(self.get_Reibmitteldruck()))

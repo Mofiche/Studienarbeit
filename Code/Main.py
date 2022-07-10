@@ -1,45 +1,72 @@
+import shutil
+
+
 def main(args=None):
     from matplotlib import pyplot as plt
     from Code.Simulationsmodule.Prozessrechnung.Prozessrechnung import Realprozessrechnung  # , Kreisprozessrechnung
+    import os
 
-    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="Benzin E5",isLuftansaugend=True)
+    #OUTPUT-Ordner löschen
 
-    T, execTime = Model.solve(modus="stat")
+    try:
+        shutil.rmtree("Output\Bilder")
+        os.makedirs("Output\Bilder")
+    except OSError as e:
+        print(e)
+    else:
+        print("Verzeichnis erfolgreich geleert")
 
-    Model.printErgebnisse()
+    def plot(x, y, Name):
+        plt.plot(x, y, label=Name)
+        plt.legend()
+        plt.savefig(f"Output\Bilder\{Name}.png", dpi=250)
+        if Name == "p-V":
+            plt.show()
+        plt.close()
 
+    Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff="Benzin", isLuftansaugend=False)
 
-    """y = []
+    #T, execTime = Model.solve(modus="stat")
+
+    #Model.printErgebnisse()
+
+    y = []
     x = []
-    min = 8
-    max = 50
-    schrittweite = 1
-    for i in range(min, max + 1, schrittweite):
-        x.append(i/10)
-        Model.set_lambdaVerbrennung(i/10)
+    min = 10
+    max = 100
+    schrittweite = 25
+    #for i in range(min, max + 1, schrittweite):
+    for krst in ["Benzin","Diesel","Wasserstoff","CNG"]:
+        x.append(krst)
+        Model = Realprozessrechnung(Kurbelwinkelaufloesung=1, Kraftstoff=krst, isLuftansaugend=False)
+
         _, zeit = Model.solve()
-        #x.append(Model.get_Leistung())
-        y.append(Model.get_Leistung())
-        print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)))
-        #plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(i))
-    plt.plot(x, y, label="")"""
+        y.append(Model.get_Wirkungsgrad())
+        #print("Fortschritt : {:.2f} %".format(100 * (i - min) / (max - min)))
+        Model.printErgebnisse()
+        plt.plot(Model.get_phi_KW(),Model.get_T_array(),label=str(krst))
+        #plt.plot(Model.get_V_Darstellung_Array(),Model.get_p_Darstellung_Array(),label=str(krst))
+    #plt.plot(x, y, label="")
+    plt.legend()
+    plt.show()
+    exit()
 
+    phi = Model.get_phi_KW()
 
-    # plt.plot(Model.get_phi_KW(), Model.get_V_Darstellung_Array(), label="V")
-    # plt.plot(__phiKW,__deltaV,label="dV")
-    #plt.plot(Model.get_phi_KW(), Model.get_p_Darstellung_Array(), label="p")
-    #plt.plot(Model.get_phi_KW(), Model.get_T_array(), label="T")
-    # plt.plot(Model.get_V_Darstellung_Array(), Model.get_p_Darstellung_Array(), label="p-V")
-    # plt.plot(Model.get_phi_KW(),Model.get_lambdaVG_Array())
-    plt.plot(Model.get_phi_KW(), Model.get_dQb_Array(), label="dQb")
-    plt.plot(Model.get_phi_KW(), Model.get_dU_Array(), label="dU")
-    # plt.plot(Model.get_phi_KW(),__deltaQw,label="dQw")
-    #plt.plot(Model.get_phi_KW(),Model.get_normierter_Summenbrennverlauf_Array(),label="__QB")
+    plot(phi, Model.get_p_Darstellung_Array(), "p-phi")
+    plot(phi, Model.get_T_array(), "T-phi")
+    plot(Model.get_V_Darstellung_Array(), Model.get_p_Darstellung_Array(), "p-V")
+    plot(Model.get_V_Darstellung_Array(), Model.get_T_array(), "T-V")
+    plot(phi, Model.get_dQb_Array(), "dQb-phi")
+    plot(phi, Model.get_dU_Array(), "dU-phi")
+    plot(phi, Model.get_dQw_Array(), "dQw-phi")
+    plot(phi, Model.get_normierter_Summenbrennverlauf_Array(), "Summenbrennverlauf-phi")
+    plot(phi,Model.get_alpha_array(),"alpha-phi")
 
     # plt.xlabel("°KW")
-    plt.legend()
-    plt.savefig("Output\pyplot.png", dpi=1000)
-    plt.show()
+    """plt.legend()
+    plt.savefig("Output\Bilder\pyplot.png", dpi=1000)
+    plt.show()"""
 
 
 if __name__ == '__main__':
